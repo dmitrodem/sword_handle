@@ -1,5 +1,5 @@
-include <BOSL2/std.scad>
-include <BOSL2/beziers.scad>
+include <submodules/BOSL2/std.scad>
+include <submodules/BOSL2/beziers.scad>
 
 /* [Hidden] */
 $fn=32;
