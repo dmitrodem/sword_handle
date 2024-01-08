@@ -10,10 +10,10 @@ $fn=32;
 handle_length = 130;
 
 // Большой диаметр рукоятки
-handle_major_diameter = 65;
+handle_major_diameter = 55;
 
 // Малый диаметр рукоятки
-handle_minor_diameter = 30;
+handle_minor_diameter = 35;
 
 // Параметр для утончения рукоятки
 handle_spline_control  = 0;
@@ -30,16 +30,16 @@ pvc_tube_diameter = 26;
 stud_spacing = 50;
 
 // Длина заклепок
-stud_length = 30;
+stud_length = 8;
 
 // Диаметр заклепок
-stud_diameter = 8;
+stud_diameter = 5;
 
 // Диаметр шарика-фиксатора
 stud_ball_diameter = 12;
 
 // Удлинение заклепки
-stud_extension = 3.0;
+stud_extension = 1.0;
 
 /* [Яблоко] */
 
@@ -56,7 +56,7 @@ apple_fillet_diameter = 20;
 bolt_head_diameter = 35;
 
 // Толщина площадки под головку болта
-bolt_head_thickness = 10;
+bolt_head_thickness = 13;
 
 /* [Коэффициенты размеров] */
 
@@ -90,6 +90,35 @@ module raw_handle() {
   }
 }
 
+module raw_handle_1() {
+  zstep = 5;
+  narrowing_x = 0.6;
+  narrowing_y = 0.6;
+  difference() {
+    union() {
+      for (z = [0:zstep:handle_length-zstep]) {
+        factor = (z - handle_length/2)/(handle_length/2);
+        scale_x = narrowing_x*(1-factor^2) + factor^2;
+        scale_y = narrowing_y*(1-factor^2) + factor^2;
+        p1 = xscale(scale_x,
+                    yscale(scale_y,
+                           yscale(handle_minor_diameter/handle_major_diameter,
+                                  p = circle(d = handle_major_diameter))));
+        z1 = z + zstep;
+        factor1 = (z1 - handle_length/2)/(handle_length/2);
+        scale_x1 = narrowing_x*(1-factor1^2) + factor1^2;
+        scale_y1 = narrowing_y*(1-factor1^2) + factor1^2;
+        p2 = xscale(scale_x1,
+                    yscale(scale_y1,
+                           yscale(handle_minor_diameter/handle_major_diameter,
+                                  p = circle(d = handle_major_diameter))));
+        skin([p1, p2], z = [z, z1], slices = 3);
+      }
+    }
+    cylinder(h = handle_length, d = pvc_tube_diameter);
+  }
+}
+
 module raw_studs(factor = 1.0, extend = 0.0) {
   zflip()
     xcopies(stud_spacing, 2)
@@ -101,7 +130,7 @@ module raw_studs(factor = 1.0, extend = 0.0) {
 
 module sword_handle() {
   union() {
-    raw_handle();
+    raw_handle_1();
     raw_studs();
     tube(h = handle_length,
          id = pvc_tube_diameter,
@@ -123,10 +152,10 @@ module raw_apple() {
 
 module raw_plug() {
   zflip()
-    up(bolt_head_thickness)
+    up(2*bolt_head_thickness)
     cylinder(h = apple_major_diameter/2 + apple_fillet_diameter/2 - bolt_head_thickness,
-             d1 = bolt_head_diameter,
-             d2 = bolt_head_diameter * plug_cone_factor);
+             d1 = 1.2*bolt_head_diameter,
+             d2 = 1.2*bolt_head_diameter * plug_cone_factor);
 }
 
 module sword_apple() {
@@ -135,6 +164,10 @@ module sword_apple() {
 
     zflip()
       cylinder(h = apple_major_diameter, d = pvc_tube_diameter);
+    down(bolt_head_thickness)
+    zflip()
+      cylinder(h = bolt_head_thickness, d = bolt_head_diameter);
+
     raw_studs(factor = stud_size_factor,
               extend = stud_extension);
     raw_plug();
@@ -162,10 +195,4 @@ if (model_type == 1)
    }
    sword_handle();
    sword_plug();
- } else {
-   difference() {
-     right(stud_spacing/2)
-       cuboid(size = [20, 20, 40], rounding = 5, except = [TOP, BOTTOM], anchor = TOP);
-     raw_studs(1.1, extend = 3.0);
-   }
  }
